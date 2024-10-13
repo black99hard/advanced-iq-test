@@ -7,13 +7,11 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Brain, ClipboardList, RotateCcw, ChevronRight, BarChart, Zap, Clock, User, Volume2, VolumeX, HelpCircle, Settings } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Brain, RotateCcw, ChevronRight,  Zap, Clock, User, Volume2, VolumeX, HelpCircle } from "lucide-react"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { BarChart as BarChartComponent, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import confetti from 'canvas-confetti'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
+
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 
