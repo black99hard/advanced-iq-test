@@ -1,17 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Brain, RotateCcw, ChevronRight,  Zap, Clock, User, Volume2, VolumeX, HelpCircle } from "lucide-react"
+import { Brain, RotateCcw, ChevronRight, Zap, Clock, User, Volume2, VolumeX, HelpCircle } from "lucide-react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { BarChart as BarChartComponent, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import confetti from 'canvas-confetti'
-
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 
@@ -311,7 +310,7 @@ export default function Component() {
     hard: 0
   })
   const [isPractice, setIsPractice] = useState(false)
-  const [totalTime, setTotalTime] =   useState(0)
+  const [totalTime, setTotalTime] = useState(0)
   const [isMuted, setIsMuted] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const [showHint, setShowHint] = useState(false)
@@ -319,12 +318,45 @@ export default function Component() {
   const [darkMode, setDarkMode] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
 
+  const finishTest = useCallback(() => {
+    if (!isPractice) {
+      const iqScore = calculateIQ()
+      const newResult: TestResult = {
+        id: testResults.length + 1,
+        date: new Date().toLocaleString(),
+        score: score,
+        iqScore: iqScore,
+        categoryScores: categoryScores,
+        difficultyScores: difficultyScores,
+        timePerQuestion: totalTime / questions.length
+      }
+      setTestResults(prevResults => [...prevResults, newResult])
+    }
+    setIsTestActive(false)
+    setCurrentTab("results")
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+  }, [isPractice, score, categoryScores, difficultyScores, totalTime, testResults.length])
+
+  const nextQuestion = useCallback(() => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(prevQuestion => prevQuestion + 1)
+      setTimeLeft(60)
+      setShowHint(false)
+      setHintUsed(false)
+    } else {
+      finishTest()
+    }
+  }, [currentQuestion, finishTest])
+
   useEffect(() => {
     let timer: NodeJS.Timeout
     if (timeLeft > 0 && isTestActive) {
       timer = setTimeout(() => {
-        setTimeLeft(timeLeft - 1)
-        setTotalTime(totalTime + 1)
+        setTimeLeft(prevTime => prevTime - 1)
+        setTotalTime(prevTotal => prevTotal + 1)
       }, 1000)
     } else if (timeLeft === 0 && currentQuestion < questions.length - 1) {
       nextQuestion()
@@ -332,7 +364,7 @@ export default function Component() {
       finishTest()
     }
     return () => clearTimeout(timer)
-  }, [timeLeft, currentQuestion, isTestActive, totalTime])
+  }, [timeLeft, currentQuestion, isTestActive, nextQuestion, finishTest])
 
   useEffect(() => {
     document.body.classList.toggle('dark', darkMode)
@@ -358,7 +390,7 @@ export default function Component() {
   const handleAnswer = (selectedAnswer: number) => {
     const currentQuestionData = questions[currentQuestion]
     if (selectedAnswer === currentQuestionData.correctAnswer) {
-      setScore(score + (hintUsed ? 0.5 : 1))
+      setScore(prevScore => prevScore + (hintUsed ? 0.5 : 1))
       setCategoryScores(prev => ({
         ...prev,
         [currentQuestionData.category]: (prev[currentQuestionData.category] || 0) + (hintUsed ? 0.5 : 1)
@@ -378,39 +410,6 @@ export default function Component() {
     nextQuestion()
   }
 
-  const nextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1)
-      setTimeLeft(60)
-      setShowHint(false)
-      setHintUsed(false)
-    } else {
-      finishTest()
-    }
-  }
-
-  const finishTest = () => {
-    if (!isPractice) {
-      const iqScore = calculateIQ()
-      const newResult: TestResult = {
-        id: testResults.length + 1,
-        date: new Date().toLocaleString(),
-        score: score,
-        iqScore: iqScore,
-        categoryScores: categoryScores,
-        difficultyScores: difficultyScores,
-        timePerQuestion: totalTime / questions.length
-      }
-      setTestResults([...testResults, newResult])
-    }
-    setIsTestActive(false)
-    setCurrentTab("results")
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-    }
-  }
-
   const calculateIQ = () => {
     const baseIQ = 100
     const scorePercentage = score / questions.length
@@ -425,7 +424,8 @@ export default function Component() {
   }
 
   const toggleSound = () => {
-    setSoundEnabled(!soundEnabled)
+    setSoundEnabled(prevEnabled => !prevEnabled)
+    setIsMuted(prevMuted => !prevMuted)
     if (audioRef.current) {
       if (soundEnabled) {
         audioRef.current.pause()
@@ -478,12 +478,12 @@ export default function Component() {
                         <CardTitle className="text-2xl text-orange-500 dark:text-indigo-400">Welcome to the Fun IQ Adventure!</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="mb-4">Get ready for an exciting journey through {questions.length} fun questions! You'll have 60 seconds for each question.</p>
+                        <p className="mb-4">Get ready for an exciting journey through {questions.length} fun questions! You&apos;ll have 60 seconds for each question.</p>
                         <p className="mb-4">Choose to start a practice adventure or the full IQ quest!</p>
                       </CardContent>
                       <CardFooter className="flex justify-between">
                         <Button onClick={() => startTest(true)} variant="outline" className="bg-yellow-200 text-yellow-800 hover:bg-yellow-300">
-                          <Zap className="mr-2 h-4 w-4" /> Practice Adventure
+                          <Zap className="mr-2  h-4 w-4" /> Practice Adventure
                         </Button>
                         <Button onClick={() => startTest(false)} className="bg-orange-500 text-white hover:bg-orange-600">
                           <Brain className="mr-2 h-4 w-4" /> Start Full Quest
@@ -628,7 +628,7 @@ export default function Component() {
                           </div>
                         </div>
                         <p className="mb-4">
-                          Hello! I'm Abdulganeey Jumoke Kabirat, a final year Computer Science student at Sa'adu Zungur University. This IQ Adventure is my final year project, designed to make learning and assessment fun for primary school students.
+                          Hello! I&apos;m Abdulganeey Jumoke Kabirat, a final year Computer Science student at Sa&apos;adu Zungur University. This IQ Adventure is my final year project, designed to make learning and assessment fun for primary school students.
                         </p>
                         <p className="mb-4">
                           My goal with this project is to combine education and technology in an engaging way, helping young minds explore their potential while having a great time!
@@ -649,7 +649,7 @@ export default function Component() {
             </Tabs>
           </CardContent>
           <CardFooter className="flex justify-between items-center">
-            <Button variant="ghost"  className="text-orange-500 dark:text-indigo-400">
+            <Button variant="ghost" onClick={toggleSound} className="text-orange-500 dark:text-indigo-400">
               {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
             </Button>
             <p className="text-sm text-orange-600 dark:text-indigo-300">© 2024 IQ Adventure</p>
@@ -661,5 +661,5 @@ export default function Component() {
         Your browser does not support the audio element.
       </audio>
     </TooltipProvider>
-  );
+  )
 }
