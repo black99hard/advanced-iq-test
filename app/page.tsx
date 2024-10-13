@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Brain, RotateCcw, ChevronRight, Zap, Clock, User, Volume2, VolumeX, HelpCircle } from "lucide-react"
+import { Brain, RotateCcw, ChevronRight, Zap, Clock, User, Volume2, VolumeX, HelpCircle, Moon, Sun } from "lucide-react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { BarChart as BarChartComponent, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import confetti from 'canvas-confetti'
@@ -277,7 +277,6 @@ const questions: Question[] = [
     hint: "Look at the differences between consecutive numbers."
   }
 ]
-
 type TestResult = {
   id: number
   date: string
@@ -318,6 +317,15 @@ export default function Component() {
   const [darkMode, setDarkMode] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
 
+  const calculateIQ = useCallback(() => {
+    const baseIQ = 100
+    const scorePercentage = score / questions.length
+    const difficultyFactor = (difficultyScores.easy * 1 + difficultyScores.medium * 2 + difficultyScores.hard * 3) / score
+    const timeFactor = 1 - Math.min(totalTime / (questions.length * 60), 1)
+    const iqRange = 40
+    return Math.round(baseIQ + (scorePercentage - 0.5) * iqRange * difficultyFactor * timeFactor)
+  }, [score, difficultyScores, totalTime])
+
   const finishTest = useCallback(() => {
     if (!isPractice) {
       const iqScore = calculateIQ()
@@ -338,7 +346,7 @@ export default function Component() {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
     }
-  }, [isPractice, score, categoryScores, difficultyScores, totalTime, testResults.length])
+  }, [isPractice, score, categoryScores, difficultyScores, totalTime, testResults.length, calculateIQ])
 
   const nextQuestion = useCallback(() => {
     if (currentQuestion < questions.length - 1) {
@@ -410,15 +418,6 @@ export default function Component() {
     nextQuestion()
   }
 
-  const calculateIQ = () => {
-    const baseIQ = 100
-    const scorePercentage = score / questions.length
-    const difficultyFactor = (difficultyScores.easy * 1 + difficultyScores.medium * 2 + difficultyScores.hard * 3) / score
-    const timeFactor = 1 - Math.min(totalTime / (questions.length * 60), 1)
-    const iqRange = 40
-    return Math.round(baseIQ + (scorePercentage - 0.5) * iqRange * difficultyFactor * timeFactor)
-  }
-
   const getChartData = (data: Record<string, number>) => {
     return Object.entries(data).map(([name, value]) => ({ name, value }))
   }
@@ -438,6 +437,10 @@ export default function Component() {
   const handleHint = () => {
     setShowHint(true)
     setHintUsed(true)
+  }
+
+  const toggleDarkMode = () => {
+    setDarkMode(prevMode => !prevMode)
   }
 
   return (
@@ -482,8 +485,8 @@ export default function Component() {
                         <p className="mb-4">Choose to start a practice adventure or the full IQ quest!</p>
                       </CardContent>
                       <CardFooter className="flex justify-between">
-                        <Button onClick={() => startTest(true)} variant="outline" className="bg-yellow-200 text-yellow-800 hover:bg-yellow-300">
-                          <Zap className="mr-2  h-4 w-4" /> Practice Adventure
+                        <Button onClick={() => startTest(true)} variant="outline" className="bg-yellow-200  text-yellow-800 hover:bg-yellow-300">
+                          <Zap className="mr-2 h-4 w-4" /> Practice Adventure
                         </Button>
                         <Button onClick={() => startTest(false)} className="bg-orange-500 text-white hover:bg-orange-600">
                           <Brain className="mr-2 h-4 w-4" /> Start Full Quest
@@ -651,6 +654,9 @@ export default function Component() {
           <CardFooter className="flex justify-between items-center">
             <Button variant="ghost" onClick={toggleSound} className="text-orange-500 dark:text-indigo-400">
               {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+            </Button>
+            <Button variant="ghost" onClick={toggleDarkMode} className="text-orange-500 dark:text-indigo-400">
+              {darkMode ? <Sun className="h-6 w-6" /> : <Moon className="h-6 w-6" />}
             </Button>
             <p className="text-sm text-orange-600 dark:text-indigo-300">© 2024 IQ Adventure</p>
           </CardFooter>
